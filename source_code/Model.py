@@ -52,7 +52,7 @@ print(X.head())
 print(y.head())
 
 
-train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.25)
+train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.15)
 
 model = KNeighborsClassifier(n_neighbors=4)
 
@@ -63,5 +63,37 @@ predictions = model.predict(test_X)
 # for index, prediction in enumerate(predictions):
 #     print(prediction, np.ravel(train_y)[index])
 
+print("Accuracy score:", model.score(test_X, test_y))
 
-print(model.score(train_X, train_y))
+test_data['Embarked'] = test_data['Embarked'].replace(np.nan, "0")
+test_data['Pclass'] = test_data['Pclass'].replace(np.nan, "0")
+test_data['Sex'] = test_data['Sex'].replace(np.nan, "0")
+test_data['Fare'] = test_data['Fare'].replace(np.nan, "0")
+
+print("Dropping unique traits: ==>\n")
+
+test_data = test_data.drop(['Cabin', 'Name', 'PassengerId', 'Ticket'], axis=1)
+
+
+encoder = preprocessing.LabelEncoder()
+
+sex = (encoder.fit_transform(np.ravel(test_data[['Sex']])))
+embarked = preprocessing.scale(encoder.fit_transform(np.ravel(test_data[['Embarked']])))
+fare = preprocessing.scale(np.ravel(test_data[['Fare']]))
+test_data['Sex'] = sex
+test_data['Embarked'] = embarked
+test_data['Fare'] = fare
+test_data['Pclass'] = preprocessing.scale(np.ravel(test_data[['Pclass']]))
+test_data = test_data[['Pclass', 'Sex', 'Fare', 'Embarked']]
+
+print(test_data)
+
+submission_prediction = model.predict(test_data)
+
+submission = pd.DataFrame({
+    "PassengerId": list(range(892, 1310)),
+    "Survived": submission_prediction
+})
+print(len(submission))
+
+submission.to_csv(r'..\submission.csv', index=False)
